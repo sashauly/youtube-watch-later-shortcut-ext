@@ -1,0 +1,40 @@
+<!--
+ Copyright (C) 2025 Sasha Ulyanov
+ 
+ This file is part of youtube-watch-later-hotkeys-extension.
+ 
+ youtube-watch-later-hotkeys-extension is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ youtube-watch-later-hotkeys-extension is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with youtube-watch-later-hotkeys-extension.  If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<!doctype html>
+<html>
+  <head>
+    <title>YouTube Watch Later Shortcut</title>
+    <link rel="stylesheet" href="/popup.css" />
+  </head>
+  <body>
+    <h1>Watch Later Shortcut</h1>
+    <p>
+      Use keyboard shortcuts to add/remove the current YouTube video or Shorts to your Watch Later
+      list.
+    </p>
+    <ul id="shortcut-list"></ul>
+    <button id="open-shortcuts">Change Shortcuts</button>
+    <div style="margin-top: 1em">
+      <label><input type="checkbox" id="debug-toggle" /> Debug mode</label>
+    </div>
+    <p><strong>Status:</strong> Extension is active.</p>
+    <script src="/popup.js"></script>
+  </body>
+</html>

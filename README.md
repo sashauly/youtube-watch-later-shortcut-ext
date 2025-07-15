@@ -1,10 +1,11 @@
-# Watch Later Shortcut Extension for YouTube™
+# YouTube Watch Later Hotkeys Extension
 <img width="128" alt="Logo" src="https://user-images.githubusercontent.com/14346393/226183792-6337223c-b3c1-4614-bc0e-8c1e22ea73ac.png">
 
-<a href="https://chrome.google.com/webstore/detail/watch-later-shortcut-for/dhegojkfhodaifdnkoigmdoncoonbifd">
-<img height="45" alt="Get for Chrome" src="https://raw.githubusercontent.com/WorldThirteen/youtube-watch-later-shortcut-ext/assets/get_for_chrome.svg">
-</a>  <a href="https://addons.mozilla.org/firefox/addon/watch-later-shortcut-youtube"><img height="45" alt="Get for Firefox" src="https://raw.githubusercontent.com/WorldThirteen/youtube-watch-later-shortcut-ext/assets/get_for_firefox.svg"></a>
+## About This Fork
 
+This is a fork of [WorldThirteen/youtube-watch-later-hotkeys-extension](https://github.com/WorldThirteen/youtube-watch-later-hotkeys-extension).
+
+Modifications by <sashauly.code@gmail.com>
 
 **Minimal. Simple. Sufficient.**
 
@@ -30,9 +31,13 @@ As a result, the notification should appear:
 
 ----
 
-<img alt="instruction" src="https://github.com/WorldThirteen/youtube-watch-later-shortcut-ext/assets/14346393/19b52d9d-9a01-469f-ab50-861871f66d2a">
+<img alt="instruction" src="https://github.com/WorldThirteen/youtube-watch-later-hotkeys-extension/assets/14346393/19b52d9d-9a01-469f-ab50-861871f66d2a">
 
 ## Changelog
 ### Version 1.2 - 30 March 2025
 - Now supports YouTube Shorts
+
+## License
+
+Licensed under the GNU General Public License v3.0. See [LICENSE](./LICENSE) for details.
 

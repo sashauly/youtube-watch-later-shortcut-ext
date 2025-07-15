@@ -1,0 +1,40 @@
+/**
+ * Copyright (C) 2025 Sasha Ulyanov
+ * 
+ * This file is part of youtube-watch-later-hotkeys-extension.
+ * 
+ * youtube-watch-later-hotkeys-extension is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * youtube-watch-later-hotkeys-extension is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with youtube-watch-later-hotkeys-extension.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+body {
+  font-family: Arial, sans-serif;
+  width: 300px;
+  margin: 0;
+  padding: 16px;
+  background: #fff;
+}
+h1 {
+  font-size: 1.2em;
+  margin-bottom: 0.5em;
+}
+ol {
+  margin: 0 0 1em 1.2em;
+}
+a {
+  color: #065fd4;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
