@@ -18,23 +18,26 @@
 -->
 
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <title>YouTube Watch Later Shortcut</title>
-    <link rel="stylesheet" href="/popup.css" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./popup.css" />
+    <script type="module" src="./popup.ts"></script>
+    <title>YouTube Watch Later Hotkeys</title>
   </head>
   <body>
-    <h1>Watch Later Shortcut</h1>
+    <h1>Watch Later Hotkeys</h1>
     <p>
-      Use keyboard shortcuts to add/remove the current YouTube video or Shorts to your Watch Later
+      Use keyboard hotkeys to add/remove the current YouTube video or Shorts to your Watch Later
       list.
     </p>
     <ul id="shortcut-list"></ul>
-    <button id="open-shortcuts">Change Shortcuts</button>
+    <button id="open-shortcuts">Change Hotkeys</button>
     <div style="margin-top: 1em">
       <label><input type="checkbox" id="debug-toggle" /> Debug mode</label>
     </div>
     <p><strong>Status:</strong> Extension is active.</p>
-    <script src="/popup.js"></script>
   </body>
 </html>

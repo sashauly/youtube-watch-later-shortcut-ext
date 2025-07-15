@@ -1,76 +1,78 @@
 //
 // Copyright (C) 2025 WorldThirteen
-// 
+//
 // Modified by sashauly.code@gmail.com
 // Changes: Merged 2 files for chrome and firefox browser into one,
 // added checking for video and Shorts on current tab,
 // addded debug mode with verbose logging,
 // added error logging for failed actions,
 // added context menu for toggling debug mode and opening shortcuts settings
-// 
+//
 // This file is part of youtube-watch-later-shortcut-ext.
-// 
+//
 // youtube-watch-later-shortcut-ext is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // youtube-watch-later-shortcut-ext is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with youtube-watch-later-shortcut-ext.  If not, see <https://www.gnu.org/licenses/>.
 
-// Polyfill for browser API
-if (typeof browser === 'undefined') {
-  var browser = chrome;
-}
+import browser from 'webextension-polyfill';
 
-// Helper for Firefox's cloneInto
-function maybeCloneInto(obj, targetWindow) {
-  if (typeof cloneInto === 'function') {
-    return cloneInto(obj, targetWindow);
-  }
-  return obj;
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare const InstallTrigger: any | undefined;
+declare function cloneInto<T>(obj: T, targetScope: Window): T;
 
 let DEBUG = false;
 
-function logDebug(...args) {
+function logDebug(...args: unknown[]): void {
   if (DEBUG) {
-    console.log('[WatchLaterExt]', ...args);
+    console.log('[watch-later-hotkeys]', ...args);
   }
 }
 
-function setLastError(context) {
+interface ErrorContext {
+  isErrorContext: true;
+  action: string;
+  tabUrl: string | null;
+  videoId: string | null;
+  message: string;
+  stack: string | null;
+  [key: string]: unknown;
+}
+
+function setLastError(context: ErrorContext): void {
   if (browser.storage && browser.storage.local) {
     const errorObj = {
       ...context,
       timestamp: new Date().toISOString(),
     };
-    if (browser.storage.local.set.length === 1) {
-      browser.storage.local.set({ lastError: errorObj });
-    } else {
-      browser.storage.local.set({ lastError: errorObj });
-    }
+    // Always use Promise-based API for polyfill compatibility
+    browser.storage.local.set({ lastError: errorObj });
   }
 }
 
-function logError(...args) {
+function logError(...args: unknown[]): void {
   if (DEBUG) {
+    // eslint-disable-next-line no-console
     console.error('[WatchLaterExt]', ...args);
   }
-  if (args[0] && typeof args[0] === 'object' && args[0].isErrorContext) {
-    setLastError(args[0]);
+  const first = args[0];
+  if (first && typeof first === 'object' && (first as ErrorContext).isErrorContext) {
+    setLastError(first as ErrorContext);
   }
 }
 
 // --- Context Menu Setup ---
-function createContextMenus() {
+function createContextMenus(): void {
   if (!browser.contextMenus) return;
-  browser.contextMenus.removeAll(() => {
+  browser.contextMenus.removeAll().then(() => {
     browser.contextMenus.create({
       id: 'toggle-debug',
       title: 'Toggle Debug Mode',
@@ -85,33 +87,26 @@ function createContextMenus() {
 }
 
 if (browser.contextMenus && browser.contextMenus.onClicked) {
-  browser.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === 'toggle-debug') {
-      if (browser.storage && browser.storage.local) {
-        if (browser.storage.local.get.length === 1) {
+  browser.contextMenus.onClicked.addListener(
+    (info: browser.Menus.OnClickData, tab?: browser.Tabs.Tab) => {
+      if (info.menuItemId === 'toggle-debug') {
+        if (browser.storage && browser.storage.local) {
           browser.storage.local.get({ debugMode: false }).then((result) => {
             const newDebug = !result.debugMode;
             browser.storage.local.set({ debugMode: newDebug });
             DEBUG = newDebug;
             logDebug('Debug mode toggled via context menu:', DEBUG);
           });
-        } else {
-          browser.storage.local.get({ debugMode: false }, (result) => {
-            const newDebug = !result.debugMode;
-            browser.storage.local.set({ debugMode: newDebug });
-            DEBUG = newDebug;
-            logDebug('Debug mode toggled via context menu:', DEBUG);
-          });
+        }
+      } else if (info.menuItemId === 'open-shortcuts') {
+        const isFirefox = typeof InstallTrigger !== 'undefined';
+        const url = isFirefox ? 'about:addons' : 'chrome://extensions/shortcuts';
+        if (browser.tabs && browser.tabs.create) {
+          browser.tabs.create({ url });
         }
       }
-    } else if (info.menuItemId === 'open-shortcuts') {
-      const isFirefox = typeof InstallTrigger !== 'undefined';
-      const url = isFirefox ? 'about:addons' : 'chrome://extensions/shortcuts';
-      if (browser.tabs && browser.tabs.create) {
-        browser.tabs.create({ url });
-      }
-    }
-  });
+    },
+  );
 }
 
 if (browser.runtime && browser.runtime.onInstalled) {
@@ -120,41 +115,37 @@ if (browser.runtime && browser.runtime.onInstalled) {
   });
 }
 createContextMenus();
-
 // --- End Context Menu Setup ---
 
-function initDebugMode() {
+function initDebugMode(): void {
   if (browser.storage && browser.storage.local) {
-    if (browser.storage.local.get.length === 1) {
-      // Promise-based (Firefox, polyfill)
-      browser.storage.local.get({ debugMode: false }).then((result) => {
-        DEBUG = !!result.debugMode;
-        logDebug('Debug mode initialized:', DEBUG);
-      });
-    } else {
-      // Callback-based (Chrome)
-      browser.storage.local.get({ debugMode: false }, (result) => {
-        DEBUG = !!result.debugMode;
-        logDebug('Debug mode initialized:', DEBUG);
-      });
-    }
+    browser.storage.local.get({ debugMode: false }).then((result) => {
+      DEBUG = !!result.debugMode;
+      logDebug('Debug mode initialized:', DEBUG);
+    });
   }
 }
 initDebugMode();
 
 if (browser.runtime && browser.runtime.onMessage) {
-  browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg && msg.type === 'set-debug-mode') {
-      DEBUG = !!msg.debugMode;
-      logDebug('Debug mode set to:', DEBUG);
-    }
-  });
+  browser.runtime.onMessage.addListener(
+    (
+      msg: unknown,
+      sender: browser.Runtime.MessageSender,
+      sendResponse: (response?: unknown) => void,
+    ) => {
+      if (msg && typeof msg === 'object' && (msg as { type?: string }).type === 'set-debug-mode') {
+        DEBUG = !!(msg as { debugMode?: boolean }).debugMode;
+        logDebug('Debug mode set to:', DEBUG);
+      }
+    },
+  );
 }
 
 logDebug('Background script loaded.');
 
-function executeYouTubeCommand(action) {
-  const getAddVideoParams = (videoId) => ({
+function executeYouTubeCommand(action: 'add-to-watch-later' | 'remove-from-watch-later'): void {
+  const getAddVideoParams = (videoId: string) => ({
     clickTrackingParams: '',
     commandMetadata: {
       webCommandMetadata: {
@@ -168,7 +159,7 @@ function executeYouTubeCommand(action) {
     },
   });
 
-  const getRemoveVideoParams = (videoId) => ({
+  const getRemoveVideoParams = (videoId: string) => ({
     clickTrackingParams: '',
     commandMetadata: {
       webCommandMetadata: {
@@ -182,7 +173,7 @@ function executeYouTubeCommand(action) {
     },
   });
 
-  const sendActionToNativeYouTubeHandler = (getParams) => {
+  const sendActionToNativeYouTubeHandler = (getParams: (videoId: string) => object) => {
     const location = new URL(window.location.href);
     const appElement = document.querySelector('ytd-app');
     let videoId = location.searchParams.get('v');
@@ -204,12 +195,11 @@ function executeYouTubeCommand(action) {
       },
     };
 
-     if (typeof cloneInto === 'function') {
-    eventDetail = cloneInto(obj, window);
-  }
+    if (typeof cloneInto === 'function') {
+      eventDetail = cloneInto(eventDetail, window);
+    }
 
-    const event = new window.CustomEvent('yt-action', {...eventDetail});
-
+    const event = new window.CustomEvent('yt-action', { ...eventDetail });
     appElement.dispatchEvent(event);
   };
 
@@ -221,30 +211,32 @@ function executeYouTubeCommand(action) {
       sendActionToNativeYouTubeHandler(getRemoveVideoParams);
     }
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.warn('Error while sending message to native YouTube handler', error);
   }
 }
 
-browser.commands.onCommand.addListener(async (command) => {
+browser.commands.onCommand.addListener(async (command: string) => {
   logDebug(`Command registered: ${command}`);
   if (command === 'add-to-watch-later' || command === 'remove-from-watch-later') {
     const startTime = Date.now();
-    const [activeYouTubeTab] = await browser.tabs.query({
+    const tabs = await browser.tabs.query({
       active: true,
       lastFocusedWindow: true,
       url: 'https://www.youtube.com/*',
     });
+    const activeYouTubeTab = tabs[0];
 
-    if (!activeYouTubeTab) {
+    if (!activeYouTubeTab || !activeYouTubeTab.url || typeof activeYouTubeTab.id !== 'number') {
       logError(
         {
           isErrorContext: true,
           action: command,
-          tabUrl: null,
+          tabUrl: activeYouTubeTab?.url ?? null,
           videoId: null,
           message: 'No active YouTube tab detected.',
           stack: null,
-        },
+        } as ErrorContext,
         'No active YouTube tab detected.',
       );
       return;
@@ -262,20 +254,23 @@ browser.commands.onCommand.addListener(async (command) => {
           videoId: null,
           message: 'Active tab is not a YouTube video or Shorts.',
           stack: null,
-        },
+        } as ErrorContext,
         'Active tab is not a YouTube video or Shorts.',
         activeYouTubeTab.url,
       );
       return;
     }
 
-    let videoId = null;
-    if (isShorts) {
+    let videoId: string | null = null;
+    try {
       const url = new URL(activeYouTubeTab.url);
-      videoId = url.pathname.split('/')[2];
-    } else if (isVideo) {
-      const url = new URL(activeYouTubeTab.url);
-      videoId = url.searchParams.get('v');
+      if (isShorts) {
+        videoId = url.pathname.split('/')[2] || null;
+      } else if (isVideo) {
+        videoId = url.searchParams.get('v');
+      }
+    } catch {
+      videoId = null;
     }
     logDebug(`Tab URL: ${activeYouTubeTab.url}`);
     logDebug(`Video ID: ${videoId}`);
@@ -295,23 +290,25 @@ browser.commands.onCommand.addListener(async (command) => {
           : `Video removed from Watch Later! (${elapsed}ms)`,
       );
     } catch (error) {
+      const err = error as { message?: string; stack?: string };
       logError(
         {
           isErrorContext: true,
           action: command,
           tabUrl: activeYouTubeTab.url,
           videoId,
-          message: error && error.message ? error.message : String(error),
-          stack: error && error.stack ? error.stack : null,
-        },
+          message: err && err.message ? err.message : String(error),
+          stack: err && err.stack ? err.stack : null,
+        } as ErrorContext,
         'Failed to execute action on the YouTube tab.',
         error,
-        error && error.stack,
+        err && err.stack,
       );
     }
   }
 });
-function isYouTubeVideo(url) {
+
+export function isYouTubeVideo(url: string): boolean {
   try {
     const u = new URL(url);
     return u.hostname === 'www.youtube.com' && u.searchParams.has('v') && u.pathname === '/watch';
@@ -320,15 +317,11 @@ function isYouTubeVideo(url) {
   }
 }
 
-function isYouTubeShorts(url) {
+export function isYouTubeShorts(url: string): boolean {
   try {
     const u = new URL(url);
     return u.hostname === 'www.youtube.com' && u.pathname.startsWith('/shorts/');
   } catch {
     return false;
   }
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { isYouTubeVideo, isYouTubeShorts };
 }

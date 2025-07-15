@@ -1,10 +1,14 @@
 {
   "name": "YouTube Watch Later Hotkeys",
-  "version": "1.0",
-  "author": "sashauly.code@gmail.com",
   "description": "Add and remove current video or YouTube Shorts from the Watch Later list using a keyboard shortcut.",
-  "manifest_version": 3,
-  "permissions": [
+  "author": "sashauly.code@gmail.com",
+  "{{chrome}}.permissions": [
+    "scripting",
+    "activeTab",
+    "storage",
+    "contextMenus"
+  ],
+  "{{firefox}}.permissions": [
     "scripting",
     "activeTab",
     "storage",
@@ -13,16 +17,23 @@
   "host_permissions": [
     "https://www.youtube.com/*"
   ],
+  "{{chrome}}.manifest_version": 3,
+  "{{firefox}}.manifest_version": 2,
   "icons": {
-    "32": "/icons/32.png",
-    "128": "/icons/128.png"
+    "32": "icon/32.png",
+    "128": "icon/128.png"
   },
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "32": "/icons/32.png",
-      "128": "/icons/128.png"
-    }
+  "{{chrome}}.action": {
+    "default_popup": "src/popup.html"
+  },
+  "{{firefox}}.browser_action": {
+    "default_popup": "src/popup.html"
+  },
+  "background": {
+    "{{chrome}}.service_worker": "src/background.ts",
+    "{{firefox}}.scripts": [
+      "src/background.ts"
+    ]
   },
   "commands": {
     "add-to-watch-later": {
@@ -41,8 +52,5 @@
       },
       "description": "Remove the current video or YouTube Shorts from the Watch Later list."
     }
-  },
-  "background": {
-    "service_worker": "background.js"
   }
 }
