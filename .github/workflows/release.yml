@@ -14,53 +14,56 @@ jobs:
     permissions:
       contents: write
 
-    # No 'env' block needed, all values are hardcoded below
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------------
-      # Setup Node.js and pnpm (Hardcoded)
+      # Setup Node.js and pnpm
       # ------------------------------------------------------------------
-      - name: Setup Node.js with pnpm
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Hardcoded
+          node-version: '20'
           cache: 'pnpm'
-          # Path is hardcoded to the root, as that's where the lock file is
           cache-dependency-path: pnpm-lock.yaml
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install pnpm
-        run: npm install -g pnpm
+      # FIX: The path to globally installed npm packages (like pnpm)
+      # might not be correctly added to the PATH by default for subsequent steps.
+      # We use the built-in corepack feature (if Node >= 16.9) or ensure
+      # it's installed via a robust method.
+      # We will rely on corepack here, which is standard in Node 20.
+      - name: Enable pnpm via Corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
 
       - name: Install System Dependencies (Optional)
         run: echo "Skipping system dependencies for this run."
 
       # ------------------------------------------------------------------
-      # Build Steps (No working-directory needed as it's the root)
+      # Build Steps
       # ------------------------------------------------------------------
       - name: Install Node Dependencies
+        # pnpm is now correctly set up via corepack
         run: pnpm install --frozen-lockfile
 
       - name: Run Build and Pack Scripts
         run: pnpm run pack
 
       # ------------------------------------------------------------------
-      # Release and Upload Steps (Hardcoded File Paths)
+      # Release and Upload Steps
       # ------------------------------------------------------------------
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          # Uses github context for tag and name
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
           files: |
-            # Hardcoded file names at the root (since WEBEXTENSION_SRC_DIR was '.')
             ywlhe-chrome.zip
             ywlhe-firefox.zip
 
@@ -68,16 +71,13 @@ jobs:
         id: create_crx
         uses: cardinalby/webext-buildtools-chrome-crx-action@v2
         with:
-          # Input zip file is hardcoded
           zipFilePath: ywlhe-chrome.zip
-          # Output CRX file needs the tag, so we must use a minimal expression here
           crxFilePath: ywlhe-chrome-${{ github.ref_name }}.crx
           privateKey: ${{ secrets.CRX_PRIVATE_KEY }}
 
       - name: Upload CRX Asset
         uses: softprops/action-gh-release@v2
         with:
-          # We must use the same file name from the previous step
           files: ywlhe-chrome-${{ github.ref_name }}.crx
           overwrite_files: true
         env:
