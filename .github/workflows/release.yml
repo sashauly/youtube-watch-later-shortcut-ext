@@ -4,7 +4,7 @@ on:
       - 'v[0-9]+.*'
   workflow_dispatch:
 
-name: Universal WebExtension Release (pnpm - Fixed)
+name: Universal WebExtension Release (pnpm - Final Fix)
 
 jobs:
   release:
@@ -16,9 +16,10 @@ jobs:
 
     env:
       # --- CONFIGURATION VARIABLES ---
-      # 1. Directory containing the package.json and source code
+      # 1. Directory containing the package.json and source code (e.g., '.' or './webextension')
+      #    This is used in 'working-directory' for run commands.
       WEBEXTENSION_SRC_DIR: .
-      # 2. Node.js version to use for setup
+      # 2. Node.js version to use for setup (Used below in steps that accept env context)
       NODE_VERSION: '20'
       # 3. Base names for the output zip files (without the .zip extension)
       CHROME_ZIP_NAME: ywlhe-chrome
@@ -37,15 +38,18 @@ jobs:
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------------
-      # Setup Node.js and pnpm
+      # Setup Node.js and pnpm (The Problem Step)
       # ------------------------------------------------------------------
       - name: Setup Node.js with pnpm
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          # FIX 1 (Line 31/32): Use a static string for node-version to avoid the error.
+          # We use the configured value, but directly.
+          node-version: '20'
           cache: 'pnpm'
-          # The cache-dependency-path property CAN use env context
-          cache-dependency-path: ${{ env.WEBEXTENSION_SRC_DIR }}/pnpm-lock.yaml
+          # FIX 2 (Line 31/32): Use a static path. Since WEBEXTENSION_SRC_DIR is '.',
+          # the lock file is at the root. We just specify the file name.
+          cache-dependency-path: pnpm-lock.yaml
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install pnpm
@@ -55,16 +59,14 @@ jobs:
         run: echo "Skipping system dependencies for this run."
 
       # ------------------------------------------------------------------
-      # Steps that need a custom working-directory now define it explicitly
+      # Build Steps (working-directory is reliable here)
       # ------------------------------------------------------------------
       - name: Install Node Dependencies
         run: pnpm install --frozen-lockfile
-        # FIX: Explicitly set the working directory for this run command
         working-directory: ${{ env.WEBEXTENSION_SRC_DIR }}
 
       - name: Run Build and Pack Scripts
         run: pnpm run pack
-        # FIX: Explicitly set the working directory for this run command
         working-directory: ${{ env.WEBEXTENSION_SRC_DIR }}
 
       # ------------------------------------------------------------------
@@ -86,7 +88,6 @@ jobs:
         id: create_crx
         uses: cardinalby/webext-buildtools-chrome-crx-action@v2
         with:
-          # These `uses:` actions are designed to accept paths with variables
           zipFilePath: ${{ env.CHROME_ZIP_PATH }}
           crxFilePath: ${{ env.CRX_FILE_NAME }}
           privateKey: ${{ secrets.CRX_PRIVATE_KEY }}
