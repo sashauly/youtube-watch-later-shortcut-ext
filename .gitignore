@@ -88,3 +88,8 @@ lerna-debug.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# packed extension
+*.crx
+*.xpi
+*.pem
