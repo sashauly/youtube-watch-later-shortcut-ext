@@ -42,7 +42,7 @@
         "mac": "Alt+Shift+L",
         "chromeos": "Alt+K"
       },
-      "description": "Add the current video or YouTube Shorts from the Watch Later list."
+      "description": "Add the current video to the Watch Later list."
     },
     "remove-from-watch-later": {
       "suggested_key": {
@@ -50,7 +50,19 @@
         "mac": "Alt+L",
         "chromeos": "Alt+L"
       },
-      "description": "Remove the current video or YouTube Shorts from the Watch Later list."
+      "description": "Remove the current video from the Watch Later list."
     }
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/watch*",
+        "https://www.youtube.com/shorts/*"
+      ],
+      "js": [
+        "src/content_script.ts"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
 }
