@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import webExtension, { readJsonFile } from 'vite-plugin-web-extension';
 
+const target = process.env.TARGET || 'chrome';
+
 function generateManifest() {
   const manifest = readJsonFile('src/manifest.json');
   const pkg = readJsonFile('package.json');
@@ -20,4 +22,8 @@ export default defineConfig({
       browser: process.env.TARGET || 'chrome',
     }),
   ],
+  build: {
+    sourcemap: true,
+    outDir: target ? `dist-${process.env.TARGET}` : 'dist',
+  },
 });

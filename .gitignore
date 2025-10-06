@@ -92,4 +92,5 @@ Thumbs.db
 # packed extension
 *.crx
 *.xpi
+*.zip
 *.pem

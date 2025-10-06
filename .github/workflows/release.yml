@@ -1,0 +1,93 @@
+on:
+  push:
+    tags:
+      - 'v[0-9]+.*'
+  workflow_dispatch:
+
+name: Universal WebExtension Release
+
+# Define defaults for the job to reduce repetition
+defaults:
+  run:
+    # Set the working directory for most steps to the extension source directory
+    working-directory: ${{ env.WEBEXTENSION_SRC_DIR }}
+
+jobs:
+  release:
+    name: Build and Upload Release Assets
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      # --- CONFIGURATION VARIABLES ---
+      # 1. Directory containing the package.json and source code
+      WEBEXTENSION_SRC_DIR: ./
+      # 2. Node.js version to use for setup
+      NODE_VERSION: '20'
+      # 3. Base names for the output zip files (without the .zip extension)
+      CHROME_ZIP_NAME: ywlhe-chrome
+      FIREFOX_ZIP_NAME: ywlhe-firefox
+      # --- END CONFIGURATION ---
+
+      # Automatically determined variables
+      TAG_VERSION: ${{ github.ref_name }}
+      # Full paths to the output files
+      CHROME_ZIP_PATH: ${{ env.WEBEXTENSION_SRC_DIR }}/${{ env.CHROME_ZIP_NAME }}.zip
+      FIREFOX_ZIP_PATH: ${{ env.WEBEXTENSION_SRC_DIR }}/${{ env.FIREFOX_ZIP_NAME }}.zip
+      CRX_FILE_NAME: ${{ env.CHROME_ZIP_NAME }}-${{ env.TAG_VERSION }}.crx
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js with pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: ${{ env.WEBEXTENSION_SRC_DIR }}/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install Node Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Build and Pack Scripts
+        # Assumes your package.json has a 'pack' or 'build' script
+        run: pnpm run pack
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_VERSION }}
+          name: Release ${{ env.TAG_VERSION }}
+          draft: false
+          prerelease: false
+          # Use the parameterized file paths
+          files: |
+            ${{ env.CHROME_ZIP_PATH }}
+            ${{ env.FIREFOX_ZIP_PATH }}
+
+      - name: Create CRX file (Chrome Web Store)
+        # This step is only needed if you submit to the Chrome Web Store
+        id: create_crx
+        uses: cardinalby/webext-buildtools-chrome-crx-action@v2
+        with:
+          # Use the parameterized zip path
+          zipFilePath: ${{ env.CHROME_ZIP_PATH }}
+          # Use the parameterized CRX file name
+          crxFilePath: ${{ env.CRX_FILE_NAME }}
+          privateKey: ${{ secrets.CRX_PRIVATE_KEY }}
+
+      - name: Upload CRX Asset
+        # Upload the generated CRX file to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.CRX_FILE_NAME }}
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
