@@ -4,7 +4,7 @@ on:
       - 'v[0-9]+.*'
   workflow_dispatch:
 
-name: Universal WebExtension Release
+name: Universal WebExtension Release (pnpm - Fixed)
 
 jobs:
   release:
@@ -36,23 +36,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ------------------------------------------------------------------
+      # Setup Node.js and pnpm
+      # ------------------------------------------------------------------
       - name: Setup Node.js with pnpm
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+          # The cache-dependency-path property CAN use env context
           cache-dependency-path: ${{ env.WEBEXTENSION_SRC_DIR }}/pnpm-lock.yaml
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install pnpm
         run: npm install -g pnpm
 
+      - name: Install System Dependencies (Optional)
+        run: echo "Skipping system dependencies for this run."
+
+      # ------------------------------------------------------------------
+      # Steps that need a custom working-directory now define it explicitly
+      # ------------------------------------------------------------------
       - name: Install Node Dependencies
         run: pnpm install --frozen-lockfile
+        # FIX: Explicitly set the working directory for this run command
+        working-directory: ${{ env.WEBEXTENSION_SRC_DIR }}
 
       - name: Run Build and Pack Scripts
-        # Assumes your package.json has a 'pack' or 'build' script
         run: pnpm run pack
+        # FIX: Explicitly set the working directory for this run command
+        working-directory: ${{ env.WEBEXTENSION_SRC_DIR }}
 
+      # ------------------------------------------------------------------
+      # Release and Upload Steps
+      # ------------------------------------------------------------------
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
@@ -61,24 +78,20 @@ jobs:
           name: Release ${{ env.TAG_VERSION }}
           draft: false
           prerelease: false
-          # Use the parameterized file paths
           files: |
             ${{ env.CHROME_ZIP_PATH }}
             ${{ env.FIREFOX_ZIP_PATH }}
 
       - name: Create CRX file (Chrome Web Store)
-        # This step is only needed if you submit to the Chrome Web Store
         id: create_crx
         uses: cardinalby/webext-buildtools-chrome-crx-action@v2
         with:
-          # Use the parameterized zip path
+          # These `uses:` actions are designed to accept paths with variables
           zipFilePath: ${{ env.CHROME_ZIP_PATH }}
-          # Use the parameterized CRX file name
           crxFilePath: ${{ env.CRX_FILE_NAME }}
           privateKey: ${{ secrets.CRX_PRIVATE_KEY }}
 
       - name: Upload CRX Asset
-        # Upload the generated CRX file to the release
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ env.CRX_FILE_NAME }}
