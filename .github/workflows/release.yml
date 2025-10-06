@@ -6,12 +6,6 @@ on:
 
 name: Universal WebExtension Release
 
-# Define defaults for the job to reduce repetition
-defaults:
-  run:
-    # Set the working directory for most steps to the extension source directory
-    working-directory: ${{ env.WEBEXTENSION_SRC_DIR }}
-
 jobs:
   release:
     name: Build and Upload Release Assets
