@@ -33,11 +33,23 @@
       Use keyboard hotkeys to add/remove the current YouTube video or Shorts to your Watch Later
       list.
     </p>
-    <ul id="shortcut-list"></ul>
+
+    <fieldset style="margin-top: 1em; border: 1px solid #ccc; padding: 10px">
+      <legend>Button Style</legend>
+      <div>
+        <label for="button-style-select">Appearance on YouTube:</label>
+        <select id="button-style-select">
+          <option value="icon-and-text">Icon and Text (Default)</option>
+          <option value="icon-only">Icon Only</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <ul id="shortcut-list" style="margin-top: 1em"></ul>
     <button id="open-shortcuts">Change Hotkeys</button>
+
     <div style="margin-top: 1em">
       <label><input type="checkbox" id="debug-toggle" /> Debug mode</label>
     </div>
-    <p><strong>Status:</strong> Extension is active.</p>
   </body>
 </html>

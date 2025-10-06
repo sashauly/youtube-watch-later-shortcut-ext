@@ -17,23 +17,189 @@
  * along with youtube-watch-later-hotkeys-extension.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/* --- YouTube Dark Theme Variables --- */
+:root {
+  --primary-color: #065fd4; /* YouTube's dark blue */
+  --text-color: #ffffff; /* White */
+  --background-color: #0f0f0f; /* YouTube's dark background */
+  --secondary-bg-color: #1f1f1f; /* YouTube's secondary dark background */
+  --button-bg-color: #303030; /* YouTube's button background */
+  --button-hover-bg-color: #404040; /* YouTube's button hover */
+  --button-active-bg-color: #202020; /* YouTube's button active */
+  --button-text-color: #ffffff; /* White */
+  --border-color: rgba(255, 255, 255, 0.1); /* YouTube's border color */
+  --checkbox-size: 20px;
+  --checkbox-border-radius: 2px;
+  --checkbox-check-color: #ffffff;
+  --checkbox-border: rgba(255, 255, 255, 0.3);
+  --text-opacity: rgba(255, 255, 255, 0.7);
+  --focus-ring: rgba(255, 255, 255, 0.3); /* Changed to use white for dark mode focus */
+}
+
+/* --- Base Layout and Typography --- */
+html,
 body {
-  width: 300px;
+  width: 22rem;
+  min-height: 16rem;
+  padding: 0;
   margin: 0;
+  font-family: Roboto, Arial, sans-serif;
+  color: var(--text-color);
+  background-color: var(--secondary-bg-color);
+  display: flex;
+  flex-direction: column;
+}
+
+body {
   padding: 16px;
-  background: #fff;
+  box-sizing: border-box;
 }
+
 h1 {
-  font-size: 1.2em;
-  margin-bottom: 0.5em;
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: var(--text-color);
 }
-ol {
-  margin: 0 0 1em 1.2em;
+
+p {
+  color: var(--text-opacity);
+  font-size: 14px;
+  margin-top: 0;
+  margin-bottom: 16px;
 }
-a {
-  color: #065fd4;
-  text-decoration: none;
+
+/* --- List Styling (Shortcuts) --- */
+ul#shortcut-list {
+  list-style: none;
+  padding: 0;
+  margin: 1em 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-a:hover {
-  text-decoration: underline;
+
+ul#shortcut-list li {
+  font-size: 14px;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+ul#shortcut-list li span {
+  /* Style for the keyboard key display */
+  font-weight: 500;
+  background-color: var(--button-bg-color);
+  color: var(--text-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  font-family: monospace;
+  font-size: 12px;
+}
+
+/* --- Button Styling (Used for Change Hotkeys) --- */
+button {
+  /* Adopting the controls button style provided by the user */
+  color: var(--button-text-color);
+  background: var(--button-bg-color);
+  padding: 0 16px;
+  height: 36px;
+  line-height: 36px;
+  border-radius: 18px;
+  margin-top: 16px;
+  white-space: nowrap;
+  text-transform: none;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  outline-width: 0;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: var(--button-hover-bg-color);
+}
+
+button:active {
+  background-color: var(--button-active-bg-color);
+  transform: translateY(0);
+}
+
+button:focus {
+  outline: 1px solid var(--text-color);
+  outline-offset: 2px;
+}
+
+/* --- Fieldset and Select Styling (Button Style Option) --- */
+fieldset {
+  border: 1px solid var(--border-color);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+legend {
+  color: var(--text-color);
+  font-weight: 500;
+  padding: 0 4px;
+}
+
+select {
+  /* Match YouTube dark theme input styles */
+  background-color: var(--button-bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 14px;
+  margin-left: 8px;
+  appearance: none; /* Remove default system arrow */
+  min-width: 150px;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* --- Checkbox Styling (Debug Mode) --- */
+/* The wrapping div is the last child of the body, and it contains the label/checkbox */
+div:last-of-type label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+input[type='checkbox'] {
+  /* Applying the custom checkbox styles from the user's provided CSS */
+  flex-shrink: 0;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  cursor: pointer;
+  accent-color: var(--primary-color);
+  border: 1px solid var(--checkbox-border); /* Reduced border width for cleaner look */
+  border-radius: var(--checkbox-border-radius);
+  transition: all 0.2s ease;
+  background-color: transparent;
+}
+
+input[type='checkbox']:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+input[type='checkbox']:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
 }
