@@ -4,7 +4,7 @@ on:
       - 'v[0-9]+.*'
   workflow_dispatch:
 
-name: Universal WebExtension Release (pnpm - Final Fix)
+name: Universal WebExtension Release (Simplified Root)
 
 jobs:
   release:
@@ -16,10 +16,9 @@ jobs:
 
     env:
       # --- CONFIGURATION VARIABLES ---
-      # 1. Directory containing the package.json and source code (e.g., '.' or './webextension')
-      #    This is used in 'working-directory' for run commands.
+      # 1. Directory containing the package.json and source code (Set to '.' for root)
       WEBEXTENSION_SRC_DIR: .
-      # 2. Node.js version to use for setup (Used below in steps that accept env context)
+      # 2. Node.js version to use for setup
       NODE_VERSION: '20'
       # 3. Base names for the output zip files (without the .zip extension)
       CHROME_ZIP_NAME: ywlhe-chrome
@@ -28,7 +27,7 @@ jobs:
 
       # Automatically determined variables
       TAG_VERSION: ${{ github.ref_name }}
-      # Full paths to the output files
+      # Full paths to the output files (These are still needed for the 'files' inputs)
       CHROME_ZIP_PATH: ${{ env.WEBEXTENSION_SRC_DIR }}/${{ env.CHROME_ZIP_NAME }}.zip
       FIREFOX_ZIP_PATH: ${{ env.WEBEXTENSION_SRC_DIR }}/${{ env.FIREFOX_ZIP_NAME }}.zip
       CRX_FILE_NAME: ${{ env.CHROME_ZIP_NAME }}-${{ env.TAG_VERSION }}.crx
@@ -43,12 +42,11 @@ jobs:
       - name: Setup Node.js with pnpm
         uses: actions/setup-node@v4
         with:
-          # FIX 1 (Line 31/32): Use a static string for node-version to avoid the error.
-          # We use the configured value, but directly.
-          node-version: '20'
+          # This should be fine, as 'node-version' is a common input
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          # FIX 2 (Line 31/32): Use a static path. Since WEBEXTENSION_SRC_DIR is '.',
-          # the lock file is at the root. We just specify the file name.
+          # FIX: Since WEBEXTENSION_SRC_DIR is '.', the lock file is at the root.
+          # We specify the file name directly relative to the default working directory.
           cache-dependency-path: pnpm-lock.yaml
           registry-url: 'https://registry.npmjs.org'
 
@@ -59,18 +57,18 @@ jobs:
         run: echo "Skipping system dependencies for this run."
 
       # ------------------------------------------------------------------
-      # Build Steps (working-directory is reliable here)
+      # Build Steps (No working-directory needed as it's the root)
       # ------------------------------------------------------------------
       - name: Install Node Dependencies
+        # This runs in the default working directory (the root, '.')
         run: pnpm install --frozen-lockfile
-        working-directory: ${{ env.WEBEXTENSION_SRC_DIR }}
 
       - name: Run Build and Pack Scripts
+        # This runs in the default working directory (the root, '.')
         run: pnpm run pack
-        working-directory: ${{ env.WEBEXTENSION_SRC_DIR }}
 
       # ------------------------------------------------------------------
-      # Release and Upload Steps
+      # Release and Upload Steps (These were mostly fine, just cleaner now)
       # ------------------------------------------------------------------
       - name: Create GitHub Release
         id: create_release
