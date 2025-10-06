@@ -4,7 +4,7 @@ on:
       - 'v[0-9]+.*'
   workflow_dispatch:
 
-name: Hardcoded WebExtension Release (Final Fix)
+name: Hardcoded WebExtension Release (Proven Pattern)
 
 jobs:
   release:
@@ -19,40 +19,35 @@ jobs:
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------------
-      # 💥 FIX: Dedicated Pnpm Setup Step 💥
-      # This step installs pnpm and makes it available on the PATH.
+      # 1. Setup pnpm (Proven to work first)
       # ------------------------------------------------------------------
-      - name: Setup pnpm
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          # We don't specify a version here, letting pnpm decide the latest or
-          # respecting the 'packageManager' field in package.json if it exists.
-          run_install: false # We will run pnpm install in a separate step
+          version: 10 # Hardcoded to a recent major version like you have
+          run_install: false
 
       # ------------------------------------------------------------------
-      # Node.js Setup (Must be separate for correct caching)
+      # 2. Setup Node.js and Caching (Proven to work second)
       # ------------------------------------------------------------------
-      - name: Setup Node.js with pnpm caching
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20' # Hardcoded
-          # This configures caching based on pnpm-lock.yaml
           cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
-          registry-url: 'https://registry.npmjs.org'
+          cache-dependency-path: pnpm-lock.yaml # Hardcoded path to root lock file
 
       # ------------------------------------------------------------------
-      # Build Steps
+      # 3. Build Steps (pnpm is now guaranteed to be on the PATH)
       # ------------------------------------------------------------------
       - name: Install Node Dependencies
-        # pnpm is now correctly set up and available here.
         run: pnpm install --frozen-lockfile
 
       - name: Run Build and Pack Scripts
         run: pnpm run pack
 
       # ------------------------------------------------------------------
-      # Release and Upload Steps
+      # Release and Upload Steps (Hardcoded File Paths)
       # ------------------------------------------------------------------
       - name: Create GitHub Release
         id: create_release
@@ -63,6 +58,7 @@ jobs:
           draft: false
           prerelease: false
           files: |
+            # Hardcoded file names at the root 
             ywlhe-chrome.zip
             ywlhe-firefox.zip
 
