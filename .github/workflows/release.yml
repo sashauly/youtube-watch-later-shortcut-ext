@@ -4,7 +4,7 @@ on:
       - 'v[0-9]+.*'
   workflow_dispatch:
 
-name: Universal WebExtension Release (Final Template)
+name: Hardcoded WebExtension Release
 
 jobs:
   release:
@@ -14,37 +14,21 @@ jobs:
     permissions:
       contents: write
 
-    env:
-      # --- CONFIGURATION VARIABLES ---
-      WEBEXTENSION_SRC_DIR: . # Directory containing the package.json and source code
-      NODE_VERSION: '20'
-      CHROME_ZIP_NAME: ywlhe-chrome
-      FIREFOX_ZIP_NAME: ywlhe-firefox
-      # --- END CONFIGURATION ---
-
-      # Automatically determined variables
-      TAG_VERSION: ${{ github.ref_name }}
-
-      # FIX: Avoid self-referencing env context.
-      # Since WEBEXTENSION_SRC_DIR is '.', the path is just the file name.
-      # This resolves lines 31, 32, and 33 errors.
-      CHROME_ZIP_PATH: ${{ env.CHROME_ZIP_NAME }}.zip
-      FIREFOX_ZIP_PATH: ${{ env.FIREFOX_ZIP_NAME }}.zip
-      CRX_FILE_NAME: ${{ env.CHROME_ZIP_NAME }}-${{ env.TAG_VERSION }}.crx
+    # No 'env' block needed, all values are hardcoded below
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------------
-      # Setup Node.js and pnpm (Simplified and Working)
+      # Setup Node.js and pnpm (Hardcoded)
       # ------------------------------------------------------------------
       - name: Setup Node.js with pnpm
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '20' # Hardcoded
           cache: 'pnpm'
-          # Path to the lock file, relative to the repository root (WEBEXTENSION_SRC_DIR is '.')
+          # Path is hardcoded to the root, as that's where the lock file is
           cache-dependency-path: pnpm-lock.yaml
           registry-url: 'https://registry.npmjs.org'
 
@@ -64,33 +48,37 @@ jobs:
         run: pnpm run pack
 
       # ------------------------------------------------------------------
-      # Release and Upload Steps
+      # Release and Upload Steps (Hardcoded File Paths)
       # ------------------------------------------------------------------
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.TAG_VERSION }}
-          name: Release ${{ env.TAG_VERSION }}
+          # Uses github context for tag and name
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
-          # These paths are now simple file names at the root.
           files: |
-            ${{ env.CHROME_ZIP_PATH }}
-            ${{ env.FIREFOX_ZIP_PATH }}
+            # Hardcoded file names at the root (since WEBEXTENSION_SRC_DIR was '.')
+            ywlhe-chrome.zip
+            ywlhe-firefox.zip
 
       - name: Create CRX file (Chrome Web Store)
         id: create_crx
         uses: cardinalby/webext-buildtools-chrome-crx-action@v2
         with:
-          zipFilePath: ${{ env.CHROME_ZIP_PATH }}
-          crxFilePath: ${{ env.CRX_FILE_NAME }}
+          # Input zip file is hardcoded
+          zipFilePath: ywlhe-chrome.zip
+          # Output CRX file needs the tag, so we must use a minimal expression here
+          crxFilePath: ywlhe-chrome-${{ github.ref_name }}.crx
           privateKey: ${{ secrets.CRX_PRIVATE_KEY }}
 
       - name: Upload CRX Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.CRX_FILE_NAME }}
+          # We must use the same file name from the previous step
+          files: ywlhe-chrome-${{ github.ref_name }}.crx
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
