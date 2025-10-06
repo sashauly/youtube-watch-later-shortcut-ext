@@ -17,7 +17,7 @@ jobs:
     env:
       # --- CONFIGURATION VARIABLES ---
       # 1. Directory containing the package.json and source code
-      WEBEXTENSION_SRC_DIR: ./
+      WEBEXTENSION_SRC_DIR: .
       # 2. Node.js version to use for setup
       NODE_VERSION: '20'
       # 3. Base names for the output zip files (without the .zip extension)
