@@ -4,7 +4,7 @@ on:
       - 'v[0-9]+.*'
   workflow_dispatch:
 
-name: Hardcoded WebExtension Release
+name: Hardcoded WebExtension Release (Final Fix)
 
 jobs:
   release:
@@ -19,34 +19,33 @@ jobs:
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------------
-      # Setup Node.js and pnpm
+      # 💥 FIX: Dedicated Pnpm Setup Step 💥
+      # This step installs pnpm and makes it available on the PATH.
       # ------------------------------------------------------------------
-      - name: Setup Node.js
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          # We don't specify a version here, letting pnpm decide the latest or
+          # respecting the 'packageManager' field in package.json if it exists.
+          run_install: false # We will run pnpm install in a separate step
+
+      # ------------------------------------------------------------------
+      # Node.js Setup (Must be separate for correct caching)
+      # ------------------------------------------------------------------
+      - name: Setup Node.js with pnpm caching
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20' # Hardcoded
+          # This configures caching based on pnpm-lock.yaml
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
           registry-url: 'https://registry.npmjs.org'
-
-      # FIX: The path to globally installed npm packages (like pnpm)
-      # might not be correctly added to the PATH by default for subsequent steps.
-      # We use the built-in corepack feature (if Node >= 16.9) or ensure
-      # it's installed via a robust method.
-      # We will rely on corepack here, which is standard in Node 20.
-      - name: Enable pnpm via Corepack
-        run: |
-          corepack enable
-          corepack prepare pnpm@latest --activate
-
-      - name: Install System Dependencies (Optional)
-        run: echo "Skipping system dependencies for this run."
 
       # ------------------------------------------------------------------
       # Build Steps
       # ------------------------------------------------------------------
       - name: Install Node Dependencies
-        # pnpm is now correctly set up via corepack
+        # pnpm is now correctly set up and available here.
         run: pnpm install --frozen-lockfile
 
       - name: Run Build and Pack Scripts
