@@ -3,8 +3,12 @@ import browser from 'webextension-polyfill';
 const WL_BUTTON_ID = 'ywhl-watch-later-button';
 const LOG_PREFIX = '[WatchLaterExt:Content]';
 const INJECTED_BUTTON_ID = 'ywhl-custom-button';
-const WL_ICON_SVG = `<svg xmlns="http:
+const WL_ICON_SVG_INACTIVE = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true">
   <path clip-rule="evenodd" d="M20.5 12c0 4.694-3.806 8.5-8.5 8.5S3.5 16.694 3.5 12 7.306 3.5 12 3.5s8.5 3.806 8.5 8.5Zm1.5 0c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10Zm-9.25-5c0-.414-.336-.75-.75-.75s-.75.336-.75.75v5.375l.3.225 4 3c.331.248.802.181 1.05-.15.248-.331.181-.801-.15-1.05l-3.7-2.775V7Z" fill-rule="evenodd"></path>
+</svg>`;
+
+const WL_ICON_SVG_ACTIVE = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true">
+  <path d="M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1Zm0 4.5a1 1 0 011 1v4.933l3.515 2.11a1 1 0 01-1.03 1.714l-4-2.4-.485-.291V6.5a1 1 0 011-1Z"></path>
 </svg>`;
 
 type ButtonDisplayMode = 'icon-only' | 'icon-and-text';
@@ -38,6 +42,8 @@ function getActionParams(videoId: string, isAdding: boolean): object {
 
 /** Sends the native YouTube action event. */
 function sendNativeYouTubeAction(videoId: string, isAdding: boolean): void {
+  if (!videoId) return;
+
   const appElement = document.querySelector('ytd-app') as HTMLElement | null;
   if (!appElement) return;
 
@@ -55,8 +61,6 @@ function sendNativeYouTubeAction(videoId: string, isAdding: boolean): void {
   if (typeof (window as any).cloneInto === 'function') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     eventData = (window as any).cloneInto(eventDetail, window);
-  } else {
-    eventData = { detail: eventDetail.detail };
   }
 
   const event = new window.CustomEvent('yt-action', eventData);
@@ -68,28 +72,33 @@ function sendNativeYouTubeAction(videoId: string, isAdding: boolean): void {
  * Toggles the button's visual state (icon, color, text) and updates internal state.
  */
 function updateButtonState(button: HTMLButtonElement, newWLState: boolean): void {
-  const iconDiv = button.querySelector(
-    '.yt-spec-button-shape-next__icon div',
-  ) as HTMLElement | null;
   const textDiv = button.querySelector(
     '.yt-spec-button-shape-next__button-text-content',
   ) as HTMLElement | null;
 
-  const newText = newWLState ? 'Remove from Watch Later' : 'Watch Later';
+  const svgContainerDiv = button.querySelector(
+    '.yt-spec-button-shape-next__icon div[style*="fill: currentcolor"]',
+  ) as HTMLElement | null;
+
+  const newText = 'Watch Later';
   const displayMode = buttonDisplayMode;
 
   isCurrentlyInWL = newWLState;
 
   if (newWLState) {
-    button.style.backgroundColor = 'var(--yt-spec-brand-button-background)';
-    button.style.color = 'white';
+    button.classList.add('ywhl-active-button-state');
 
-    if (iconDiv) iconDiv.style.fill = 'white';
+    button.style.color = 'var(--yt-spec-brand-icon-active)';
+    button.style.backgroundColor = '';
+
+    if (svgContainerDiv) svgContainerDiv.innerHTML = WL_ICON_SVG_ACTIVE;
   } else {
+    button.classList.remove('ywhl-active-button-state');
+
     button.style.backgroundColor = '';
     button.style.color = '';
 
-    if (iconDiv) iconDiv.style.fill = 'currentcolor';
+    if (svgContainerDiv) svgContainerDiv.innerHTML = WL_ICON_SVG_INACTIVE;
   }
 
   button.title = newText;
@@ -97,6 +106,7 @@ function updateButtonState(button: HTMLButtonElement, newWLState: boolean): void
   button.setAttribute('aria-pressed', newWLState.toString());
   if (textDiv) textDiv.textContent = newText;
 
+  // Handle display mode change
   if (displayMode === 'icon-only') {
     button.classList.remove('yt-spec-button-shape-next--icon-leading');
 
@@ -110,7 +120,10 @@ function updateButtonState(button: HTMLButtonElement, newWLState: boolean): void
 
 function checkNativeSaveButtonState(): boolean {
   const nativeSaveButton = document.querySelector(
-    'ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Save"], ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Guardar"]',
+    'ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Save"], ' +
+      'ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Guardar"], ' +
+      'ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Tallenna"], ' +
+      'ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Salva"]',
   );
 
   if (nativeSaveButton) {
@@ -127,7 +140,10 @@ function observeNativeSaveButton(): void {
   }
 
   const nativeSaveButton = document.querySelector(
-    'ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Save"], ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Guardar"]',
+    'ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Save"], ' +
+      'ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Guardar"], ' +
+      'ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Tallenna"], ' +
+      'ytd-menu-renderer #top-level-buttons-computed button[aria-label*="Salva"]',
   );
 
   const buttonToUpdate = document.getElementById(INJECTED_BUTTON_ID) as HTMLButtonElement | null;
@@ -156,11 +172,14 @@ function createWatchLaterButton(): HTMLElement {
   const initialState = checkNativeSaveButtonState();
   isCurrentlyInWL = initialState;
 
-  const actionText = initialState ? 'Remove from Watch Later' : 'Watch Later';
+  const actionText = 'Watch Later';
   const displayMode = buttonDisplayMode;
+  const initialIconSVG = initialState ? WL_ICON_SVG_ACTIVE : WL_ICON_SVG_INACTIVE;
 
   const buttonClassModifier =
     displayMode === 'icon-only' ? '' : 'yt-spec-button-shape-next--icon-leading';
+
+  const buttonActiveStateClass = initialState ? 'ywhl-active-button-state' : '';
 
   const buttonWrapper = document.createElement('yt-button-view-model');
   buttonWrapper.className = 'ytd-menu-renderer';
@@ -170,7 +189,7 @@ function createWatchLaterButton(): HTMLElement {
     <button-view-model class="ytSpecButtonViewModelHost style-scope ytd-menu-renderer">
       <button
         id="${INJECTED_BUTTON_ID}"
-        class="yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m ${buttonClassModifier} yt-spec-button-shape-next--enable-backdrop-filter-experiment"
+        class="yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m ${buttonClassModifier} ${buttonActiveStateClass} yt-spec-button-shape-next--enable-backdrop-filter-experiment"
         title="${actionText}"
         aria-label="${actionText}"
         aria-disabled="false"
@@ -180,7 +199,7 @@ function createWatchLaterButton(): HTMLElement {
           <span class="ytIconWrapperHost" style="width: 24px; height: 24px">
             <span class="yt-icon-shape ytSpecIconShapeHost">
               <div style="width: 100%; height: 100%; display: block; fill: currentcolor">
-                ${WL_ICON_SVG}
+                ${initialIconSVG}
               </div>
             </span>
           </span>
@@ -199,8 +218,9 @@ function createWatchLaterButton(): HTMLElement {
   updateButtonState(buttonElement, initialState);
 
   buttonElement.addEventListener('click', () => {
-    sendNativeYouTubeAction(currentVideoId!, !isCurrentlyInWL);
-    updateButtonState(buttonElement, !isCurrentlyInWL);
+    const newState = !isCurrentlyInWL;
+    sendNativeYouTubeAction(currentVideoId!, newState);
+    updateButtonState(buttonElement, newState);
   });
 
   return buttonWrapper;
@@ -258,6 +278,11 @@ function injectWatchLaterButton(): void {
 
   if (!buttonsContainer || !currentVideoId) {
     console.log(`${LOG_PREFIX} Injection skipped: Container not found or not a valid video page.`);
+
+    const pageManager = document.getElementById('page-manager');
+    if (pageManager) {
+      observePageManagerForButtonsContainer(pageManager);
+    }
     return;
   }
 
@@ -285,6 +310,31 @@ function injectWatchLaterButton(): void {
 
   console.log(`${LOG_PREFIX} Starting state observation.`);
   observeNativeSaveButton();
+}
+
+let pageManagerObserver: MutationObserver | null = null;
+
+function observePageManagerForButtonsContainer(pageManager: HTMLElement): void {
+  if (pageManagerObserver) return;
+
+  console.log(
+    `${LOG_PREFIX} Starting observation on page-manager for button container (#top-level-buttons-computed) to appear.`,
+  );
+
+  pageManagerObserver = new MutationObserver((_mutationsList, observer) => {
+    const buttonsContainer = document.getElementById('top-level-buttons-computed');
+    if (buttonsContainer) {
+      console.log(`${LOG_PREFIX} Button container found. Stopping observation.`);
+      observer.disconnect();
+      pageManagerObserver = null;
+      debouncedInjectWatchLaterButton();
+    }
+  });
+
+  pageManagerObserver.observe(pageManager, {
+    childList: true,
+    subtree: true,
+  });
 }
 
 function handlePreferenceUpdate(newMode: ButtonDisplayMode) {
@@ -325,13 +375,13 @@ function initializeContentScript() {
     debouncedInjectWatchLaterButton();
   });
 
-  setTimeout(debouncedInjectWatchLaterButton, 500);
-
   const initialObserver = new MutationObserver((_mutationsList, observer) => {
     const container = document.getElementById('top-level-buttons-computed');
 
-    if (container && !document.getElementById(WL_BUTTON_ID)) {
-      injectWatchLaterButton();
+    if (container) {
+      if (!document.getElementById(WL_BUTTON_ID)) {
+        injectWatchLaterButton();
+      }
       observer.disconnect();
     }
   });
@@ -339,6 +389,8 @@ function initializeContentScript() {
   const appElement = document.getElementById('page-manager') as HTMLElement | null;
   if (appElement) {
     initialObserver.observe(appElement, { childList: true, subtree: true });
+  } else {
+    debouncedInjectWatchLaterButton();
   }
 }
 
