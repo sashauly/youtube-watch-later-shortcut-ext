@@ -58,7 +58,6 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            # Hardcoded file names at the root 
             ywlhe-chrome.zip
             ywlhe-firefox.zip
 
