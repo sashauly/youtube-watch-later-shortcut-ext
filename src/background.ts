@@ -1,4 +1,3 @@
-//
 // Copyright (C) 2025 WorldThirteen
 //
 // Modified by sashauly.code@gmail.com
@@ -25,23 +24,18 @@
 
 import browser from 'webextension-polyfill';
 
-// --- Constants and State ---
-
 const WL_PLAYLIST_ID = 'WL';
 const API_URL = '/youtubei/v1/browse/edit_playlist';
 const SHORTCUTS_URL_FIREFOX = 'about:addons';
 const SHORTCUTS_URL_CHROME = 'chrome://extensions/shortcuts';
 const LOG_PREFIX = '[WatchLaterExt]';
 
-// New constants for preferences
 type ButtonDisplayMode = 'icon-only' | 'icon-and-text';
 const DEFAULT_BUTTON_MODE: ButtonDisplayMode = 'icon-and-text';
 const BUTTON_MODE_KEY = 'buttonDisplayMode';
 
 let DEBUG = false;
 let buttonDisplayMode: ButtonDisplayMode = DEFAULT_BUTTON_MODE;
-
-// --- Utility Functions ---
 
 /** Checks if the current environment is Firefox (only useful in the background script). */
 function isFirefox(): boolean {
@@ -59,7 +53,7 @@ function logDebug(...args: unknown[]): void {
 function isYouTubeVideo(url: string): boolean {
   try {
     const u = new URL(url);
-    // Explicitly check for both hostname and pathname for greater certainty.
+
     return u.hostname === 'www.youtube.com' && u.pathname === '/watch' && u.searchParams.has('v');
   } catch {
     return false;
@@ -80,8 +74,6 @@ function isYouTubeShorts(url: string): boolean {
   }
 }
 
-// --- Error & Debug Management ---
-
 interface ErrorContext {
   isErrorContext: true;
   action: string;
@@ -92,14 +84,13 @@ interface ErrorContext {
   [key: string]: unknown;
 }
 
-/** Writes error context to local storage without throwing an error if storage fails. */
 function setLastError(context: ErrorContext): void {
   if (browser.storage?.local) {
     const errorObj = {
       ...context,
       timestamp: new Date().toISOString(),
     };
-    // Use Promise-based API and catch errors on storage failure
+
     browser.storage.local.set({ lastError: errorObj }).catch((e) => {
       console.warn(`${LOG_PREFIX} Failed to save lastError to storage:`, e);
     });
@@ -116,7 +107,6 @@ function logError(...args: unknown[]): void {
   }
 }
 
-/** Loads debug mode state from storage on script initialization. */
 function initDebugMode(): void {
   if (browser.storage?.local) {
     browser.storage.local.get({ debugMode: false }).then((result) => {
@@ -125,8 +115,6 @@ function initDebugMode(): void {
     });
   }
 }
-
-// --- NEW: Preference Loading and Management ---
 
 async function loadPreferences(): Promise<void> {
   if (browser.storage?.sync) {
@@ -165,15 +153,11 @@ async function sendStyleUpdateToTab(tabId: number): Promise<void> {
         mode: buttonDisplayMode,
       });
     } catch (e) {
-      // This is expected if the content script hasn't fully loaded yet.
       logDebug(`Could not send message to tab ${tabId}. Likely content script not ready.`, e);
     }
   }
 }
 
-// --- Listeners for Preference and Tab Changes ---
-
-// 1. Listen for storage changes from an options page
 if (browser.storage?.onChanged) {
   browser.storage.onChanged.addListener(async (changes, areaName) => {
     if (areaName === 'sync' && changes[BUTTON_MODE_KEY]) {
@@ -182,11 +166,9 @@ if (browser.storage?.onChanged) {
         logDebug(`Storage changed. New button mode: ${newMode}`);
         buttonDisplayMode = newMode;
 
-        // Get all active YouTube tabs and notify them of the change
         const tabs = await browser.tabs.query({ url: 'https://www.youtube.com/*' });
         for (const tab of tabs) {
           if (tab.id) {
-            // Send the message to instantly update the content script's state
             await sendStyleUpdateToTab(tab.id);
           }
         }
@@ -195,20 +177,15 @@ if (browser.storage?.onChanged) {
   });
 }
 
-// 2. Send preferences when a tab is updated (e.g., page load/refresh/SPA transition)
 if (browser.tabs?.onUpdated) {
   browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    // Only act on complete loads of YouTube pages
     if (changeInfo.status === 'complete' && tab.url?.startsWith('https://www.youtube.com/')) {
       await sendStyleUpdateToTab(tabId);
     }
   });
 }
 
-// --- Context Menu Handlers (No changes required here, keeping for completeness) ---
-
 function createContextMenus(): void {
-  // Use optional chaining for safety, though polyfill should ensure existence.
   if (!browser.contextMenus) {
     logDebug('Context Menu API not available.');
     return;
@@ -216,7 +193,6 @@ function createContextMenus(): void {
 
   logDebug('Attempting to create context menus...');
 
-  // Use removeAll().then() to ensure a clean slate before creation
   browser.contextMenus
     .removeAll()
     .then(() => {
@@ -227,7 +203,7 @@ function createContextMenus(): void {
           browser.contextMenus.create({
             id: id,
             title: title,
-            contexts: ['action'], // 'action' targets the extension icon
+            contexts: ['action'],
           }),
         )
           .then(() => {
@@ -250,7 +226,6 @@ function createContextMenus(): void {
           });
       };
 
-      // Create menu items and wait for both to complete
       return Promise.all([
         createMenuItem('toggle-debug', 'Toggle Debug Mode'),
         createMenuItem('open-shortcuts', 'Open Shortcut Settings'),
@@ -273,7 +248,6 @@ function createContextMenus(): void {
     });
 }
 
-// 1. Listen for Installation/Update
 if (browser.runtime.onInstalled) {
   browser.runtime.onInstalled.addListener(() => {
     logDebug('Extension installed/updated. Creating context menus...');
@@ -281,7 +255,6 @@ if (browser.runtime.onInstalled) {
   });
 }
 
-// 2. Listen for Browser Startup (More Robust)
 if (browser.runtime.onStartup) {
   browser.runtime.onStartup.addListener(() => {
     logDebug('Browser started up. Re-creating context menus...');
@@ -289,10 +262,8 @@ if (browser.runtime.onStartup) {
   });
 }
 
-// 3. Immediate Call (for development reloads)
 logDebug('Executing immediate createContextMenus call...');
 createContextMenus();
-// --- End Context Menu Setup ---
 
 if (browser.contextMenus?.onClicked) {
   browser.contextMenus.onClicked.addListener((info: browser.Menus.OnClickData) => {
@@ -302,7 +273,7 @@ if (browser.contextMenus?.onClicked) {
         .then((result) => {
           const newDebug = !result.debugMode;
           browser.storage.local.set({ debugMode: newDebug });
-          DEBUG = newDebug; // Update local state immediately
+          DEBUG = newDebug;
           logDebug('Debug mode toggled via context menu:', DEBUG);
         })
         .catch((e) => logError('Failed to toggle debug mode in storage:', e));
@@ -315,12 +286,8 @@ if (browser.contextMenus?.onClicked) {
   });
 }
 
-// --- YouTube Action Execution (Runs as Content Script) ---
-// (The command logic remains unchanged as it is independent of button style)
-
 type YouTubeAction = 'add-to-watch-later' | 'remove-from-watch-later';
 
-// ... (getAddVideoParams, getRemoveVideoParams, executeYouTubeCommand functions remain the same) ...
 function getAddVideoParams(videoId: string): object {
   return {
     clickTrackingParams: '',
@@ -352,21 +319,16 @@ function getRemoveVideoParams(videoId: string): object {
   };
 }
 function executeYouTubeCommand(action: YouTubeAction): void {
-  // This is a minimal implementation of logDebug, as the full logError/logDebug
-  // infrastructure is complex to pass to the content script.
   const contentLogDebug = (...args: unknown[]) => {
     console.log('[WatchLaterExt:Content]', ...args);
   };
 
   const sendActionToNativeYouTubeHandler = (getParams: (videoId: string) => object) => {
-    // Use `window.location` in the content script context
     const location = new URL(window.location.href);
     const appElement = document.querySelector('ytd-app');
 
-    // Get video ID from URL
     let videoId = location.searchParams.get('v');
     if (location.pathname.startsWith('/shorts/')) {
-      // Short-circuit the split for performance/clarity
       const pathSegments = location.pathname.split('/');
       videoId = pathSegments.length >= 3 ? pathSegments[2] : null;
     }
@@ -392,7 +354,6 @@ function executeYouTubeCommand(action: YouTubeAction): void {
       eventDetail = { detail: eventDetail };
     }
 
-    // Dispatch the CustomEvent on the ytd-app element
     const event = new window.CustomEvent('yt-action', eventDetail);
     appElement.dispatchEvent(event);
     contentLogDebug(`Dispatched '${action}' event for video ID: ${videoId}`);
@@ -408,9 +369,6 @@ function executeYouTubeCommand(action: YouTubeAction): void {
   }
 }
 
-// --- Main Command Listener ---
-// (Remains the same)
-
 browser.commands.onCommand.addListener(async (command: string) => {
   const startTime = Date.now();
   logDebug(`Command registered: ${command}`);
@@ -419,10 +377,8 @@ browser.commands.onCommand.addListener(async (command: string) => {
     return;
   }
 
-  // --- HOIST DECLARATIONS HERE ---
   let activeYouTubeTab: browser.Tabs.Tab | undefined;
   let videoId: string | null = null;
-  // --- END HOIST ---
 
   try {
     const tabs = await browser.tabs.query({
@@ -432,7 +388,6 @@ browser.commands.onCommand.addListener(async (command: string) => {
     });
     activeYouTubeTab = tabs[0];
 
-    // Early exit if no valid tab is found
     if (!activeYouTubeTab?.url || typeof activeYouTubeTab.id !== 'number') {
       logError(
         {
@@ -477,7 +432,6 @@ browser.commands.onCommand.addListener(async (command: string) => {
         videoId = u.searchParams.get('v');
       }
     } catch {
-      // Should not happen if isYouTubeVideo/isYouTubeShorts passed, but safe to catch.
       videoId = null;
     }
 
@@ -503,7 +457,6 @@ browser.commands.onCommand.addListener(async (command: string) => {
 
     logDebug(`Executing command: ${command} on tab ${tabId}`);
 
-    // The command argument is explicitly typed in this scope, so we can cast it.
     await browser.scripting.executeScript({
       target: { tabId },
       func: executeYouTubeCommand,
@@ -522,7 +475,7 @@ browser.commands.onCommand.addListener(async (command: string) => {
       isErrorContext: true,
       action: command,
       tabUrl: activeYouTubeTab?.url ?? null,
-      videoId: videoId ?? null, // use the variable from the try block
+      videoId: videoId ?? null,
       message: err?.message ?? String(error),
       stack: err?.stack ?? null,
     };
@@ -530,8 +483,6 @@ browser.commands.onCommand.addListener(async (command: string) => {
   }
 });
 
-// --- Initialization ---
-
 initDebugMode();
-loadPreferences(); // NEW: Load preferences on startup
+loadPreferences();
 logDebug('Background script loaded.');
