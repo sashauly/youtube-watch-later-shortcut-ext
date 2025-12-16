@@ -17,35 +17,86 @@
  * along with youtube-watch-later-hotkeys-extension.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/* --- YouTube Dark Theme Variables --- */
+/* ===================================================
+   1. SYSTEM / DEFAULT (DARK) THEME VARIABLES
+   =================================================== */
 :root {
-  --primary-color: #065fd4; /* YouTube's dark blue */
-  --text-color: #ffffff; /* White */
-  --background-color: #0f0f0f; /* YouTube's dark background */
-  --secondary-bg-color: #1f1f1f; /* YouTube's secondary dark background */
-  --button-bg-color: #303030; /* YouTube's button background */
-  --button-hover-bg-color: #404040; /* YouTube's button hover */
-  --button-active-bg-color: #202020; /* YouTube's button active */
-  --button-text-color: #ffffff; /* White */
-  --border-color: rgba(255, 255, 255, 0.1); /* YouTube's border color */
-  --checkbox-size: 20px;
-  --checkbox-border-radius: 2px;
-  --checkbox-check-color: #ffffff;
-  --checkbox-border: rgba(255, 255, 255, 0.3);
-  --text-opacity: rgba(255, 255, 255, 0.7);
-  --focus-ring: rgba(255, 255, 255, 0.3); /* Changed to use white for dark mode focus */
+  /* Colors */
+  --primary-color: #3ea6ff; /* Accent blue */
+  --text-color-primary: #ffffff;
+  --text-color-secondary: rgba(255, 255, 255, 0.7);
+  --background-color-main: #0f0f0f; /* Primary dark background */
+  --background-color-card: #1f1f1f; /* Secondary background for grouping */
+
+  /* Buttons and Controls */
+  --button-color-secondary: #ffffff1a; /* Subtle button background */
+  --button-hover-color-secondary: #ffffff26;
+  --button-color-primary: #3ea6ff;
+  --button-text-color-primary: #0f0f0f; /* Dark text on blue button */
+
+  /* Dropdown Menu Fix (for open options) */
+  --dropdown-menu-bg: var(--background-color-card);
+  --dropdown-menu-text: var(--text-color-primary);
+  --dropdown-menu-highlight: var(--primary-color);
+  --dropdown-menu-highlight-text: var(--text-color-primary);
+
+  /* Borders and Special Elements */
+  --border-color: rgba(255, 255, 255, 0.1);
+  --hotkey-bg: #ffffff14;
+  --hotkey-border: #ffffff1a;
+  --focus-ring: rgba(255, 255, 255, 0.3);
 }
+
+/* ===================================================
+   2. LIGHT THEME VARIABLES OVERRIDE
+   =================================================== */
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Colors */
+    --primary-color: #065fd4;
+    --text-color-primary: #0f0f0f;
+    --text-color-secondary: #606060;
+    --background-color-main: #ffffff;
+    --background-color-card: #f2f2f2;
+
+    /* Buttons and Controls */
+    --button-color-secondary: #0000000d;
+    --button-hover-color-secondary: #0000001a;
+    --button-color-primary: #065fd4;
+    --button-text-color-primary: #ffffff;
+
+    /* Dropdown Menu Fix (for open options) */
+    --dropdown-menu-bg: #ffffff;
+    --dropdown-menu-text: var(--text-color-primary);
+    --dropdown-menu-highlight: var(--primary-color);
+    --dropdown-menu-highlight-text: #ffffff;
+
+    /* Borders and Special Elements */
+    --border-color: #e0e0e0;
+    --hotkey-bg: #f9f9f9;
+    --hotkey-border: #e0e0e0;
+    --focus-ring: rgba(0, 0, 0, 0.2);
+  }
+
+  /* Light mode specific hover */
+  .yt-button.primary-button:hover {
+    background-color: #044ba3;
+  }
+}
+
+/* ===================================================
+   3. STRUCTURAL STYLES 
+   =================================================== */
 
 /* --- Base Layout and Typography --- */
 html,
 body {
-  width: 22rem;
-  min-height: 16rem;
+  width: 24rem;
   padding: 0;
   margin: 0;
-  font-family: Roboto, Arial, sans-serif;
-  color: var(--text-color);
-  background-color: var(--secondary-bg-color);
+  font-family: 'Roboto', 'Arial', sans-serif;
+  color: var(--text-color-primary);
+  background-color: var(--background-color-main);
   display: flex;
   flex-direction: column;
 }
@@ -55,151 +106,215 @@ body {
   box-sizing: border-box;
 }
 
+/* --- Header and Description --- */
+.app-header {
+  margin-bottom: 12px;
+}
+
 h1 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   margin-top: 0;
   margin-bottom: 8px;
-  color: var(--text-color);
+  color: var(--text-color-primary);
 }
 
-p {
-  color: var(--text-opacity);
-  font-size: 14px;
+.app-description {
+  color: var(--text-color-secondary);
+  font-size: 0.875rem;
   margin-top: 0;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
-/* --- List Styling (Shortcuts) --- */
-ul#shortcut-list {
-  list-style: none;
-  padding: 0;
-  margin: 1em 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* --- Settings Sections (Component Grouping) --- */
+.setting-section {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: var(--background-color-card);
+  border: 1px solid var(--border-color);
 }
 
-ul#shortcut-list li {
-  font-size: 14px;
-  color: var(--text-color);
+.section-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-color-primary);
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+/* --- Form Rows (Select Control) --- */
+.form-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-ul#shortcut-list li span {
-  /* Style for the keyboard key display */
-  font-weight: 500;
-  background-color: var(--button-bg-color);
-  color: var(--text-color);
-  padding: 4px 8px;
-  border-radius: 4px;
+.form-label {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+}
+
+/* SELECT Dropdown (The visible part) */
+.form-control {
+  background-color: var(--button-color-secondary);
+  color: var(--text-color-primary);
   border: 1px solid var(--border-color);
-  font-family: monospace;
-  font-size: 12px;
-}
-
-/* --- Button Styling (Used for Change Hotkeys) --- */
-button {
-  /* Adopting the controls button style provided by the user */
-  color: var(--button-text-color);
-  background: var(--button-bg-color);
-  padding: 0 16px;
-  height: 36px;
-  line-height: 36px;
-  border-radius: 18px;
-  margin-top: 16px;
-  white-space: nowrap;
-  text-transform: none;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  outline-width: 0;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-}
-
-button:hover {
-  background-color: var(--button-hover-bg-color);
-}
-
-button:active {
-  background-color: var(--button-active-bg-color);
-  transform: translateY(0);
-}
-
-button:focus {
-  outline: 1px solid var(--text-color);
-  outline-offset: 2px;
-}
-
-/* --- Fieldset and Select Styling (Button Style Option) --- */
-fieldset {
-  border: 1px solid var(--border-color);
-  padding: 12px;
   border-radius: 8px;
-  margin-bottom: 8px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  margin-left: 12px;
+  appearance: none;
+  min-width: 160px;
+  cursor: pointer;
+
+  /* Custom dropdown icon setup */
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 30px;
 }
 
-legend {
-  color: var(--text-color);
-  font-weight: 500;
-  padding: 0 4px;
+/* --- Dropdown Menu Contrast Fix --- */
+
+select.form-control option {
+  color: var(--dropdown-menu-text);
+  background-color: var(--dropdown-menu-bg);
 }
 
-select {
-  /* Match YouTube dark theme input styles */
-  background-color: var(--button-bg-color);
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-size: 14px;
-  margin-left: 8px;
-  appearance: none; /* Remove default system arrow */
-  min-width: 150px;
+select.form-control option:checked,
+select.form-control option:hover {
+  color: var(--dropdown-menu-highlight-text);
+  background-color: var(--dropdown-menu-highlight);
 }
 
-select:focus {
-  outline: none;
+/* Dark Mode Default Icon (White) */
+.form-control {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24' fill='%23ffffff'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+}
+/* Light Mode Icon Override (Black) */
+@media (prefers-color-scheme: light) {
+  .form-control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24' fill='%230f0f0f'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  }
+}
+
+.form-control:focus {
+  outline: 1px solid var(--primary-color);
   border-color: var(--primary-color);
 }
 
+/* --- Shortcut List Styling --- */
+.shortcut-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.shortcut-item {
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shortcut-description {
+  color: var(--text-color-secondary);
+}
+
+.hotkey {
+  font-weight: 500;
+  background-color: var(--hotkey-bg);
+  color: var(--text-color-primary);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--hotkey-border);
+  font-family: monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
+/* --- Button Styling --- */
+.yt-button {
+  height: 38px;
+  padding: 0 16px;
+  line-height: 38px;
+  border-radius: 19px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Secondary Button Style */
+.yt-button.secondary-button {
+  color: var(--text-color-primary);
+  background-color: var(--button-color-secondary);
+}
+
+.yt-button.secondary-button:hover {
+  background-color: var(--button-hover-color-secondary);
+}
+
+/* Primary Button Style (Change Hotkeys) */
+.yt-button.primary-button {
+  color: var(--button-text-color-primary);
+  background-color: var(--button-color-primary);
+}
+
+.yt-button.primary-button:hover {
+  background-color: #5bbaff;
+}
+
+.yt-button:focus,
+.form-control:focus {
+  outline: 1px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
 /* --- Checkbox Styling (Debug Mode) --- */
-/* The wrapping div is the last child of the body, and it contains the label/checkbox */
-div:last-of-type label {
+.checkbox-section {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 0;
+  margin-top: 24px;
+}
+
+.checkbox-label {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 14px;
-  color: var(--text-color);
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
   cursor: pointer;
 }
 
-input[type='checkbox'] {
-  /* Applying the custom checkbox styles from the user's provided CSS */
+.form-checkbox {
   flex-shrink: 0;
-  width: var(--checkbox-size);
-  height: var(--checkbox-size);
+  width: 18px;
+  height: 18px;
   cursor: pointer;
   accent-color: var(--primary-color);
-  border: 1px solid var(--checkbox-border); /* Reduced border width for cleaner look */
-  border-radius: var(--checkbox-border-radius);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
   transition: all 0.2s ease;
   background-color: transparent;
 }
 
-input[type='checkbox']:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--focus-ring);
-}
-input[type='checkbox']:checked {
+.form-checkbox:checked {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
 }

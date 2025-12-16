@@ -28,28 +28,39 @@
     <title>YouTube Watch Later Hotkeys</title>
   </head>
   <body>
-    <h1>Watch Later Hotkeys</h1>
-    <p>
-      Use keyboard hotkeys to add/remove the current YouTube video or Shorts to your Watch Later
-      list.
-    </p>
+    <header class="app-header">
+      <h1>Watch Later Hotkeys</h1>
+      <p class="app-description">
+        Use keyboard hotkeys to add/remove the current YouTube video or Shorts to your Watch Later
+        list.
+      </p>
+    </header>
 
-    <fieldset style="margin-top: 1em; border: 1px solid #ccc; padding: 10px">
-      <legend>Button Style</legend>
-      <div>
-        <label for="button-style-select">Appearance on YouTube:</label>
-        <select id="button-style-select">
-          <option value="icon-and-text">Icon and Text (Default)</option>
-          <option value="icon-only">Icon Only</option>
-        </select>
+    <main class="app-settings">
+      <div class="setting-section">
+        <h2 class="section-title">Appearance</h2>
+        <div class="form-row">
+          <label for="button-style-select" class="form-label">Button Style on YouTube:</label>
+          <select id="button-style-select" class="form-control">
+            <option value="icon-and-text">Icon and Text (Default)</option>
+            <option value="icon-only">Icon Only</option>
+          </select>
+        </div>
       </div>
-    </fieldset>
 
-    <ul id="shortcut-list" style="margin-top: 1em"></ul>
-    <button id="open-shortcuts">Change Hotkeys</button>
+      <div class="setting-section">
+        <h2 class="section-title">Current Shortcuts</h2>
+        <ul id="shortcut-list" class="shortcut-list"></ul>
 
-    <div style="margin-top: 1em">
-      <label><input type="checkbox" id="debug-toggle" /> Debug mode</label>
-    </div>
+        <button id="open-shortcuts" class="yt-button primary-button">Change Hotkeys</button>
+      </div>
+
+      <div class="setting-section checkbox-section">
+        <label class="checkbox-label">
+          <input type="checkbox" id="debug-toggle" class="form-checkbox" />
+          Debug mode
+        </label>
+      </div>
+    </main>
   </body>
 </html>
