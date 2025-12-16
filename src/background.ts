@@ -26,6 +26,7 @@ import browser from 'webextension-polyfill';
 
 const WL_PLAYLIST_ID = 'WL';
 const API_URL = '/youtubei/v1/browse/edit_playlist';
+// Standard URLs for opening shortcuts settings
 const SHORTCUTS_URL_FIREFOX = 'about:addons';
 const SHORTCUTS_URL_CHROME = 'chrome://extensions/shortcuts';
 const LOG_PREFIX = '[WatchLaterExt]';
@@ -198,32 +199,30 @@ function createContextMenus(): void {
     .then(() => {
       logDebug('Existing context menus removed successfully.');
 
-      const createMenuItem = (id: string, title: string): Promise<void> => {
-        return Promise.resolve(
-          browser.contextMenus.create({
-            id: id,
-            title: title,
-            contexts: ['action'],
-          }),
-        )
-          .then(() => {
-            logDebug(`Context menu item "${title}" created successfully (ID: ${id}).`);
-          })
-          .catch((e: unknown) => {
-            logError(
-              {
-                isErrorContext: true,
-                action: `create-menu-${id}`,
-                tabUrl: null,
-                videoId: null,
-                message: `Failed to create context menu item: ${title}`,
-                stack: (e as Error)?.stack ?? null,
-                error: e,
-              },
-              `Failed to create context menu item: ${title}`,
-              e,
-            );
-          });
+      const createMenuItem = async (id: string, title: string): Promise<void> => {
+        try {
+          await (
+            browser.contextMenus.create({
+              id: id,
+              title: title,
+              contexts: ['action'],
+            }) as unknown as Promise<void>
+          );
+          logDebug(`Context menu item "${title}" created successfully (ID: ${id}).`);
+        } catch (e) {
+          logError(
+            {
+              isErrorContext: true,
+              action: `create-menu-${id}`,
+              tabUrl: null,
+              videoId: null,
+              message: `Failed to create context menu item: ${title}`,
+              stack: (e as Error)?.stack ?? null,
+              error: e,
+            },
+            `Failed to create context menu item: ${title}`,
+            e);
+        }
       };
 
       return Promise.all([
@@ -262,9 +261,6 @@ if (browser.runtime.onStartup) {
   });
 }
 
-logDebug('Executing immediate createContextMenus call...');
-createContextMenus();
-
 if (browser.contextMenus?.onClicked) {
   browser.contextMenus.onClicked.addListener((info: browser.Menus.OnClickData) => {
     if (info.menuItemId === 'toggle-debug' && browser.storage?.local) {
@@ -288,47 +284,33 @@ if (browser.contextMenus?.onClicked) {
 
 type YouTubeAction = 'add-to-watch-later' | 'remove-from-watch-later';
 
-function getAddVideoParams(videoId: string): object {
-  return {
-    clickTrackingParams: '',
-    commandMetadata: {
-      webCommandMetadata: {
-        sendPost: true,
-        apiUrl: API_URL,
+function executeYouTubeCommand(action: YouTubeAction, wlPlaylistId: string, apiUrl: string): void {
+  const getParams = (videoId: string, isAdding: boolean): object => {
+    const actionStr = isAdding ? 'ACTION_ADD_VIDEO' : 'ACTION_REMOVE_VIDEO_BY_VIDEO_ID';
+    const videoKey = isAdding ? 'addedVideoId' : 'removedVideoId';
+
+    return {
+      clickTrackingParams: '',
+      commandMetadata: {
+        webCommandMetadata: {
+          sendPost: true,
+          apiUrl: apiUrl,
+        },
       },
-    },
-    playlistEditEndpoint: {
-      playlistId: WL_PLAYLIST_ID,
-      actions: [{ addedVideoId: videoId, action: 'ACTION_ADD_VIDEO' }],
-    },
-  };
-}
-function getRemoveVideoParams(videoId: string): object {
-  return {
-    clickTrackingParams: '',
-    commandMetadata: {
-      webCommandMetadata: {
-        sendPost: true,
-        apiUrl: API_URL,
+      playlistEditEndpoint: {
+        playlistId: wlPlaylistId,
+        actions: [{ [videoKey]: videoId, action: actionStr }],
       },
-    },
-    playlistEditEndpoint: {
-      playlistId: WL_PLAYLIST_ID,
-      actions: [{ action: 'ACTION_REMOVE_VIDEO_BY_VIDEO_ID', removedVideoId: videoId }],
-    },
-  };
-}
-function executeYouTubeCommand(action: YouTubeAction): void {
-  const contentLogDebug = (...args: unknown[]) => {
-    console.log('[WatchLaterExt:Content]', ...args);
+    };
   };
 
-  const sendActionToNativeYouTubeHandler = (getParams: (videoId: string) => object) => {
+  const sendActionToNativeYouTubeHandler = () => {
     const location = new URL(window.location.href);
     const appElement = document.querySelector('ytd-app');
+    const isAdding = action === 'add-to-watch-later';
 
     let videoId = location.searchParams.get('v');
-    if (location.pathname.startsWith('/shorts/')) {
+    if (!videoId && location.pathname.startsWith('/shorts/')) {
       const pathSegments = location.pathname.split('/');
       videoId = pathSegments.length >= 3 ? pathSegments[2] : null;
     }
@@ -341,13 +323,14 @@ function executeYouTubeCommand(action: YouTubeAction): void {
     let eventDetail: object = {
       actionName: 'yt-service-request',
       returnValue: [],
-      args: [{ data: {} }, getParams(videoId)],
+      args: [{ data: {} }, getParams(videoId, isAdding)],
       optionalAction: false,
     };
 
-    // Firefox requires objects passed across the content script/page boundary to be "cloned"
+    // Handle cross-realm object cloning for Firefox
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (typeof (window as any).cloneInto === 'function') {
+      // The event detail itself must be cloned into the target window
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       eventDetail = (window as any).cloneInto({ detail: eventDetail }, window);
     } else {
@@ -356,14 +339,11 @@ function executeYouTubeCommand(action: YouTubeAction): void {
 
     const event = new window.CustomEvent('yt-action', eventDetail);
     appElement.dispatchEvent(event);
-    contentLogDebug(`Dispatched '${action}' event for video ID: ${videoId}`);
+    console.log(`[WatchLaterExt:Content] Dispatched '${action}' event for video ID: ${videoId}`);
   };
 
   try {
-    const paramsGenerator =
-      action === 'add-to-watch-later' ? getAddVideoParams : getRemoveVideoParams;
-
-    sendActionToNativeYouTubeHandler(paramsGenerator);
+    sendActionToNativeYouTubeHandler();
   } catch (error) {
     console.error('[WatchLaterExt:Content] Error during execution:', error);
   }
@@ -423,7 +403,7 @@ browser.commands.onCommand.addListener(async (command: string) => {
       return;
     }
 
-    videoId = null;
+    // Extract Video ID for logging/error context in the background script
     try {
       const u = new URL(url);
       if (isShorts) {
@@ -457,10 +437,11 @@ browser.commands.onCommand.addListener(async (command: string) => {
 
     logDebug(`Executing command: ${command} on tab ${tabId}`);
 
+    // Pass necessary constants as arguments to the injected function
     await browser.scripting.executeScript({
       target: { tabId },
       func: executeYouTubeCommand,
-      args: [command as YouTubeAction],
+      args: [command as YouTubeAction, WL_PLAYLIST_ID, API_URL],
     });
 
     const elapsed = Date.now() - startTime;
